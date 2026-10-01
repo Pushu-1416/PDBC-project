@@ -1,0 +1,39 @@
+import mysql.connector
+
+connection = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="root",
+    database="customer_churn_project"
+)
+cursor = connection.cursor()
+query = """
+SELECT
+    CASE
+        WHEN monthly_charges < 30 THEN 'Low Charges'
+        WHEN monthly_charges < 70 THEN 'Medium Charges'
+        ELSE 'High Charges'
+    END AS charge_group,
+    COUNT(*) ,
+    SUM(CASE WHEN churn = 'Yes' THEN 1 ELSE 0 END) AS churned_customers,
+    ROUND(
+        (SUM(CASE WHEN churn = 'Yes' THEN 1 ELSE 0 END) / COUNT(*)) * 100,
+        2
+    ) AS churn_rate
+FROM customer_churn
+GROUP BY charge_group
+ORDER BY churn_rate DESC;
+"""
+cursor.execute(query)
+results = cursor.fetchall()
+print("Churn Rate by Monthly Charge Group:")
+print()
+for row in results:
+    print(
+        "Charge Group:", row[0],
+        "| Total Customers:", row[1],
+        "| Churned:", row[2],
+        "| Churn Rate:", row[3], "%"
+    )
+cursor.close()
+connection.close()
